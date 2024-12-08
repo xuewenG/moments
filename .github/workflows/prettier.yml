@@ -1,0 +1,18 @@
+name: Prettier
+on:
+  push:
+    branches:
+      - dev
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+jobs:
+  prettier:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Prettify code
+        uses: creyD/prettier_action@v4.3
+        with:
+          prettier_options: ./front --write --config ./front/.prettierrc.js --ignore-path ./front/.prettierignore

@@ -5,6 +5,8 @@ package main
 import (
 	"embed"
 	"fmt"
+	"net/http"
+
 	"github.com/ilyakaznacheev/cleanenv"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/kingwrcy/moments/db"
@@ -19,8 +21,6 @@ import (
 	"github.com/samber/do/v2"
 	_ "github.com/swaggo/echo-swagger"
 	"gorm.io/gorm"
-	"io/fs"
-	"net/http"
 )
 
 var gitCommitID string
@@ -82,12 +82,4 @@ func main() {
 	if err != nil {
 		myLogger.Fatal().Msgf("服务启动失败,错误原因:%s", err)
 	}
-}
-
-func isEmbedFSEmpty(e embed.FS, path string) (bool, error) {
-	entries, err := fs.ReadDir(e, path)
-	if err != nil {
-		return false, err
-	}
-	return len(entries) == 0, nil
 }

@@ -1,0 +1,65 @@
+name: Create Or Update Release Draft
+on:
+  push:
+    branches:
+      - dev
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.2.0
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.22.5
+      - name: Release Draft
+        id: release_draft
+        uses: release-drafter/release-drafter@v6
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          commitish: ${{ github.sha }}
+      - name: Clear Release Assets
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          gh release view ${{ steps.release_draft.outputs.tag_name }} --json assets --jq '.assets[].name' | \
+          xargs -I {} gh release delete-asset ${{ steps.release_draft.outputs.tag_name }} {}
+      - name: Install Front Dependencies
+        run: |
+          npm install -g pnpm
+          make frontend-install
+      - name: Build Front and Backend
+        run: |
+          make build VERSION=${{ steps.release_draft.outputs.tag_name }} COMMIT_ID=${GITHUB_SHA:0:7}
+      - name: Generate Zip
+        run: |
+          make zip VERSION=${{ steps.release_draft.outputs.tag_name }} COMMIT_ID=${GITHUB_SHA:0:7}
+      - name: Generate Checksums
+        run: |
+          make checksums VERSION=${{ steps.release_draft.outputs.tag_name }} COMMIT_ID=${GITHUB_SHA:0:7}
+      - name: Collect Assets
+        run: |
+          mkdir -p ./dist
+          mv ./front/.output/moments-*.zip ./dist
+          mv ./front/.output/moments-*-checksum.txt ./dist
+          mv ./backend/dist/moments-*.zip ./dist
+          mv ./backend/dist/moments-*-checksum.txt ./dist
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          draft: true
+          files: ./dist/*
+          fail_on_unmatched_files: true
+          name: ${{ steps.release_draft.outputs.name }}
+          tag_name: ${{ steps.release_draft.outputs.tag_name }}

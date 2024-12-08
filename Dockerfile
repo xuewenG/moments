@@ -9,7 +9,6 @@ RUN pnpm run generate
 
 FROM golang:1.22.5-alpine AS backend
 WORKDIR /app
-ENV CGO_ENABLED=1
 RUN apk add --no-cache build-base tzdata
 COPY backend/go.mod .
 COPY backend/go.sum .
